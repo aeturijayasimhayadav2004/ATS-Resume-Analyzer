@@ -3,11 +3,11 @@ import { ATSResult } from "@/types";
 
 const openai = new OpenAI({
   apiKey: process.env.NEXT_PUBLIC_OPENAI_API_KEY,
-  dangerouslyAllowBrowser: true, // Only for demo/client-side use as requested
+  dangerouslyAllowBrowser: true,
 });
 
 export async function getResumeReview(
-  resumeBase64: string,
+  resumeContent: { base64?: string; text?: string },
   jobDescription: string,
   domain: string
 ): Promise<string> {
@@ -17,31 +17,30 @@ export async function getResumeReview(
 3. Experience and skill gaps
 4. Overall recommendation (Strong Fit / Good Fit / Needs Work / Not a Fit)
 Be specific, professional, and constructive.
-Job Description: ${jobDescription}`;
+
+Job Description: ${jobDescription}
+
+Resume Content:
+${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT PROVIDED]"}`;
+
+  const content: any[] = [{ type: "text", text: prompt }];
+  if (resumeContent.base64) {
+    content.push({
+      type: "image_url",
+      image_url: { url: `data:image/png;base64,${resumeContent.base64}` },
+    });
+  }
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:image/png;base64,${resumeBase64}`,
-            },
-          },
-        ],
-      },
-    ],
+    messages: [{ role: "user", content }],
   });
 
   return response.choices[0].message.content || "No review generated.";
 }
 
 export async function getATSScore(
-  resumeBase64: string,
+  resumeContent: { base64?: string; text?: string },
   jobDescription: string,
   domain: string
 ): Promise<ATSResult> {
@@ -54,24 +53,22 @@ export async function getATSScore(
   "suggestions": string[]
 }
 Job Description: ${jobDescription}
-Domain: ${domain}`;
+Domain: ${domain}
+
+Resume Content:
+${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT PROVIDED]"}`;
+
+  const content: any[] = [{ type: "text", text: prompt }];
+  if (resumeContent.base64) {
+    content.push({
+      type: "image_url",
+      image_url: { url: `data:image/png;base64,${resumeContent.base64}` },
+    });
+  }
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
-    messages: [
-      {
-        role: "user",
-        content: [
-          { type: "text", text: prompt },
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:image/png;base64,${resumeBase64}`,
-            },
-          },
-        ],
-      },
-    ],
+    messages: [{ role: "user", content }],
     response_format: { type: "json_object" },
   });
 
@@ -80,6 +77,6 @@ Domain: ${domain}`;
   try {
     return JSON.parse(text) as ATSResult;
   } catch {
-    throw new Error("Failed to parse ATS score response from OpenAI. Raw: " + text);
+    throw new Error("Failed to parse ATS score response. Raw: " + text);
   }
 }

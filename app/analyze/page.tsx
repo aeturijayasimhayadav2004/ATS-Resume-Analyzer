@@ -20,6 +20,7 @@ import { ScoreRing } from "@/components/ScoreRing";
 import { ResultTabs } from "@/components/ResultTabs";
 import { pdfToBase64Image, pdfToThumbnail } from "@/lib/pdfUtils";
 import { getResumeReview, getATSScore } from "@/lib/ai";
+import { extractTextFromBase64 } from "@/lib/ocr";
 import { saveAnalysis } from "@/lib/db";
 import { ATSResult, Domain } from "@/types";
 
@@ -160,10 +161,13 @@ export default function AnalyzePage() {
 
     try {
       const base64 = await pdfToBase64Image(file);
+      
+      setLoadingMsg("Extracting text with OCR...");
+      const text = await extractTextFromBase64(base64);
 
       const [review, atsResult] = await Promise.all([
-        getResumeReview(base64, data.jobDescription, domain),
-        getATSScore(base64, data.jobDescription, domain),
+        getResumeReview({ base64, text }, data.jobDescription, domain),
+        getATSScore({ base64, text }, data.jobDescription, domain),
       ]);
 
       clearInterval(interval);

@@ -19,7 +19,7 @@ import Image from "next/image";
 import { ScoreRing } from "@/components/ScoreRing";
 import { ResultTabs } from "@/components/ResultTabs";
 import { pdfToBase64Image, pdfToThumbnail } from "@/lib/pdfUtils";
-import { getResumeReview, getATSScore } from "@/lib/gemini";
+import { getResumeReview, getATSScore } from "@/lib/ai";
 import { saveAnalysis } from "@/lib/db";
 import { ATSResult, Domain } from "@/types";
 

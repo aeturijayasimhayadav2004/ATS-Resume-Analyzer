@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ats-resume-analyzer
+    runtime: docker
+    plan: starter          # free tier; upgrade to standard for more RAM
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: "8501"
+      - key: STREAMLIT_SERVER_HEADLESS
+        value: "true"
+      - key: STREAMLIT_BROWSER_GATHER_USAGE_STATS
+        value: "false"
+      - key: TRANSFORMERS_CACHE
+        value: /app/.cache/huggingface
+      - key: HF_HOME
+        value: /app/.cache/huggingface

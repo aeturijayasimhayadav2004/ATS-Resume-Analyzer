@@ -1,0 +1,22 @@
+# Firebase Functions Python runtime: 3.11 - 3.13
+# Cloud Functions 2nd gen runs on Cloud Run — no 250/500 MB limit.
+# Total install ~1.1 GB; cold start ~30 s; warm requests ~200-500 ms.
+
+# --- Firebase SDK ---
+firebase-functions==0.5.0
+firebase-admin==6.5.0
+
+# --- NLP ---
+spacy==3.7.5
+https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+
+# --- ML / similarity ---
+scikit-learn==1.5.1
+numpy==1.26.4
+sentence-transformers==3.0.1
+torch==2.3.1
+
+# --- Document parsing ---
+pdfplumber==0.11.4
+PyPDF2==3.0.1
+python-docx==1.1.2

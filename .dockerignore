@@ -1,0 +1,16 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+*.pyo
+.cache
+venv
+.venv
+env
+.env
+functions/
+.firebase/
+firebase.json
+.firebaserc
+*.md
+.claude/

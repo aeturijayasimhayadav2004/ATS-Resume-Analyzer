@@ -43,26 +43,13 @@ class ResumeAnalyzer:
         try:
             import spacy
             try:
-                return spacy.load(
-                    "en_core_web_sm",
-                    disable=["parser"],
-                )
-            except OSError:
-                # Auto-download on first run (Streamlit Cloud / cold start)
-                import subprocess, sys
-                logger.info("Downloading en_core_web_sm...")
-                subprocess.run(
-                    [sys.executable, "-m", "spacy", "download", "en_core_web_sm"],
-                    check=True, capture_output=True,
-                )
                 return spacy.load("en_core_web_sm", disable=["parser"])
-        except Exception:
-            logger.info("spaCy unavailable; using blank pipeline.")
-            try:
-                import spacy
+            except OSError:
+                logger.warning("en_core_web_sm not found, using blank pipeline.")
                 return spacy.blank("en")
-            except ImportError:
-                return None
+        except ImportError:
+            logger.info("spaCy not installed; running without it.")
+            return None
 
     @staticmethod
     def _load_sentence_model():

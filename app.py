@@ -1,15 +1,27 @@
-import io
-import base64
+import os
 import streamlit as st
 from resume_analyzer import ResumeAnalyzer
 
 # ---------------------------------------------------------------------------
-# Init — load once per session (spaCy + sentence-transformers)
+# Init — load once per session.
+# On Streamlit Community Cloud (1 GB RAM) we skip sentence-transformers
+# to avoid OOM; TF-IDF + spaCy still give accurate ATS scoring.
 # ---------------------------------------------------------------------------
+
+def _try_semantic() -> bool:
+    """Return True only if we have enough RAM for sentence-transformers."""
+    try:
+        import psutil
+        available_mb = psutil.virtual_memory().available / (1024 * 1024)
+        return available_mb > 700
+    except ImportError:
+        # psutil not installed — check env flag or default to False on Cloud
+        return os.environ.get("ENABLE_SEMANTIC", "0") == "1"
 
 @st.cache_resource(show_spinner="Loading ML models (first run may take ~30s)...")
 def load_analyzer() -> ResumeAnalyzer:
-    return ResumeAnalyzer(load_semantic_model=True)
+    use_semantic = _try_semantic()
+    return ResumeAnalyzer(load_semantic_model=use_semantic)
 
 
 ANALYZER = load_analyzer()
@@ -25,7 +37,8 @@ st.set_page_config(
 )
 
 st.title("ATS Resume Analyzer")
-st.caption("Powered by local ML models — no external API required.")
+_mode = "TF-IDF + spaCy + Semantic" if ANALYZER._sentence_model else "TF-IDF + spaCy"
+st.caption(f"Powered by local ML models ({_mode}) — no external API required.")
 
 # ---------------------------------------------------------------------------
 # Input section

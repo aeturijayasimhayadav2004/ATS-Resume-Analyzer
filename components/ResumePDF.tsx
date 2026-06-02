@@ -28,40 +28,40 @@ const c = {
 const s = StyleSheet.create({
   page: {
     fontFamily: "Helvetica",
-    fontSize: 10,
+    fontSize: 9.5,
     color: c.black,
-    padding: "36pt 48pt",
-    lineHeight: 1.4,
+    padding: "28pt 40pt",
+    lineHeight: 1.3,
   },
-  name: { fontSize: 22, fontFamily: "Helvetica-Bold", color: c.black, marginBottom: 4 },
-  contact: { fontSize: 9, color: c.gray, flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  contactItem: { marginRight: 12 },
-  divider: { borderBottom: `1pt solid ${c.border}`, marginVertical: 8 },
+  name: { fontSize: 20, fontFamily: "Helvetica-Bold", color: c.black, marginBottom: 3 },
+  contact: { fontSize: 8.5, color: c.gray, flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  contactItem: { marginRight: 10 },
+  divider: { borderBottom: `1pt solid ${c.border}`, marginVertical: 4 },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontFamily: "Helvetica-Bold",
     color: c.accent,
     textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 6,
-    marginTop: 14,
+    letterSpacing: 0.8,
+    marginBottom: 3,
+    marginTop: 9,
   },
-  body: { fontSize: 10, color: c.gray, lineHeight: 1.5 },
+  body: { fontSize: 9.5, color: c.gray, lineHeight: 1.4 },
   bold: { fontFamily: "Helvetica-Bold" },
   row: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  bullet: { flexDirection: "row", marginBottom: 3 },
-  bulletDot: { width: 12, color: c.gray },
-  bulletText: { flex: 1, color: c.gray, fontSize: 9.5, lineHeight: 1.45 },
-  skillRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginBottom: 4 },
+  bullet: { flexDirection: "row", marginBottom: 1.5 },
+  bulletDot: { width: 10, color: c.gray },
+  bulletText: { flex: 1, color: c.gray, fontSize: 9, lineHeight: 1.35 },
+  skillRow: { flexDirection: "row", flexWrap: "wrap", gap: 3, marginBottom: 3 },
   skillTag: {
     backgroundColor: "#EFF6FF",
     color: c.accent,
-    fontSize: 8.5,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 4,
+    fontSize: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 3,
   },
-  light: { color: c.light, fontSize: 9 },
+  light: { color: c.light, fontSize: 8.5 },
 });
 
 function Section({ title }: { title: string }) {
@@ -110,7 +110,7 @@ function ResumeDocument({ data }: { data: ResumeProfile }) {
           <>
             <Section title="Experience" />
             {data.experience.map((exp, i) => (
-              <View key={i} style={{ marginBottom: 10 }}>
+              <View key={i} style={{ marginBottom: 6 }}>
                 <View style={s.row}>
                   <Text style={[s.bold, { fontSize: 10.5 }]}>{exp.title}</Text>
                   <Text style={s.light}>
@@ -137,7 +137,7 @@ function ResumeDocument({ data }: { data: ResumeProfile }) {
           <>
             <Section title="Education" />
             {data.education.map((edu, i) => (
-              <View key={i} style={{ marginBottom: 8 }}>
+              <View key={i} style={{ marginBottom: 5 }}>
                 <View style={s.row}>
                   <Text style={[s.bold, { fontSize: 10.5 }]}>{edu.degree}</Text>
                   <Text style={s.light}>{edu.graduationDate}</Text>
@@ -157,8 +157,8 @@ function ResumeDocument({ data }: { data: ResumeProfile }) {
           <>
             <Section title="Skills" />
             {data.skills.map((sg, i) => (
-              <View key={i} style={{ marginBottom: 6 }}>
-                <Text style={[s.bold, { fontSize: 9.5, marginBottom: 3 }]}>{sg.category}</Text>
+              <View key={i} style={{ marginBottom: 4 }}>
+                <Text style={[s.bold, { fontSize: 9, marginBottom: 2 }]}>{sg.category}</Text>
                 <View style={s.skillRow}>
                   {sg.items.map((item, j) => (
                     <Text key={j} style={s.skillTag}>
@@ -176,7 +176,7 @@ function ResumeDocument({ data }: { data: ResumeProfile }) {
           <>
             <Section title="Projects" />
             {data.projects.map((p, i) => (
-              <View key={i} style={{ marginBottom: 8 }}>
+              <View key={i} style={{ marginBottom: 5 }}>
                 <View style={s.row}>
                   <Text style={[s.bold, { fontSize: 10.5 }]}>{p.name}</Text>
                   {p.url ? <Text style={s.light}>{p.url}</Text> : null}
@@ -207,6 +207,135 @@ function ResumeDocument({ data }: { data: ResumeProfile }) {
   );
 }
 
+function ResumeHTMLPreview({ data }: { data: ResumeProfile }) {
+  const contacts = [data.email, data.phone, data.location, data.linkedin, data.github, data.website].filter(Boolean);
+
+  return (
+    <div
+      style={{
+        fontFamily: "Arial, Helvetica, sans-serif",
+        fontSize: "9.5pt",
+        color: "#111",
+        lineHeight: 1.35,
+        background: "#fff",
+        padding: "28px 40px",
+        width: "100%",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Header */}
+      <div style={{ marginBottom: 6 }}>
+        <div style={{ fontSize: "20pt", fontWeight: 700, letterSpacing: "-0.5px" }}>{data.name}</div>
+        <div style={{ fontSize: "8.5pt", color: "#444", display: "flex", flexWrap: "wrap", gap: 4, marginTop: 3 }}>
+          {contacts.map((item, i) => (
+            <span key={i} style={{ marginRight: 10 }}>{item}</span>
+          ))}
+        </div>
+        <hr style={{ borderTop: "1px solid #ddd", margin: "6px 0 0" }} />
+      </div>
+
+      {/* Summary */}
+      {data.summary && (
+        <div style={{ marginBottom: 2 }}>
+          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 8, marginBottom: 2 }}>Professional Summary</div>
+          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          <div style={{ fontSize: "9.5pt", color: "#444" }}>{data.summary}</div>
+        </div>
+      )}
+
+      {/* Experience */}
+      {data.experience.length > 0 && (
+        <div>
+          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Experience</div>
+          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          {data.experience.map((exp, i) => (
+            <div key={i} style={{ marginBottom: 6 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontWeight: 700, fontSize: "10pt" }}>{exp.title}</span>
+                <span style={{ color: "#777", fontSize: "8.5pt", whiteSpace: "nowrap", marginLeft: 8 }}>{exp.startDate} – {exp.endDate}</span>
+              </div>
+              <div style={{ color: "#777", fontSize: "8.5pt", marginBottom: 3 }}>
+                {exp.company}{exp.location ? ` · ${exp.location}` : ""}
+              </div>
+              {exp.bullets.map((b, j) => (
+                <div key={j} style={{ display: "flex", marginBottom: 1.5 }}>
+                  <span style={{ width: 10, flexShrink: 0, color: "#444" }}>•</span>
+                  <span style={{ fontSize: "9pt", color: "#444", lineHeight: 1.35 }}>{b}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Education */}
+      {data.education.length > 0 && (
+        <div>
+          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Education</div>
+          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          {data.education.map((edu, i) => (
+            <div key={i} style={{ marginBottom: 5 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontWeight: 700, fontSize: "10pt" }}>{edu.degree}</span>
+                <span style={{ color: "#777", fontSize: "8.5pt", whiteSpace: "nowrap", marginLeft: 8 }}>{edu.graduationDate}</span>
+              </div>
+              <div style={{ color: "#777", fontSize: "8.5pt" }}>
+                {edu.institution}{edu.location ? ` · ${edu.location}` : ""}{edu.gpa ? ` · GPA: ${edu.gpa}` : ""}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Skills */}
+      {data.skills.length > 0 && (
+        <div>
+          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Skills</div>
+          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          {data.skills.map((sg, i) => (
+            <div key={i} style={{ marginBottom: 4 }}>
+              <span style={{ fontWeight: 700, fontSize: "9pt" }}>{sg.category}: </span>
+              <span style={{ fontSize: "9pt", color: "#444" }}>{sg.items.join(", ")}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Projects */}
+      {data.projects && data.projects.length > 0 && (
+        <div>
+          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Projects</div>
+          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          {data.projects.map((p, i) => (
+            <div key={i} style={{ marginBottom: 5 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <span style={{ fontWeight: 700, fontSize: "10pt" }}>{p.name}</span>
+                {p.url && <span style={{ color: "#777", fontSize: "8.5pt" }}>{p.url}</span>}
+              </div>
+              <div style={{ fontSize: "9pt", color: "#444", marginBottom: 2 }}>{p.description}</div>
+              <div style={{ fontSize: "8.5pt", color: "#777" }}>Technologies: {p.technologies.join(", ")}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Certifications */}
+      {data.certifications && data.certifications.length > 0 && (
+        <div>
+          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Certifications</div>
+          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          {data.certifications.map((cert, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
+              <span style={{ fontSize: "9.5pt", color: "#444" }}>{cert.name} · {cert.issuer}</span>
+              <span style={{ color: "#777", fontSize: "8.5pt" }}>{cert.date}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface ResumePDFDownloadProps {
   data: ResumeProfile;
   score: number;
@@ -217,23 +346,32 @@ export function ResumePDFDownload({ data, score, attempts }: ResumePDFDownloadPr
   const fileName = `${data.name.replace(/\s+/g, "_")}_ATS_Resume.pdf`;
 
   return (
-    <div className="rounded-2xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 p-6 space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      {/* Score bar */}
+      <div className="rounded-2xl border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30 p-4 flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-            Resume Ready!
-          </h3>
+          <h3 className="text-base font-bold text-gray-900 dark:text-white">Resume Ready!</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
             ATS Score: <span className="font-semibold text-green-600 dark:text-green-400">{score}%</span>
-            {" · "}
-            Built in {attempts} {attempts === 1 ? "attempt" : "attempts"}
+            {" · "}Built in {attempts} {attempts === 1 ? "attempt" : "attempts"}
           </p>
         </div>
-        <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
-          <span className="text-xl font-bold text-green-600 dark:text-green-400">{score}</span>
+        <div className="w-14 h-14 rounded-full bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+          <span className="text-lg font-bold text-green-600 dark:text-green-400">{score}</span>
         </div>
       </div>
 
+      {/* Preview */}
+      <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+        <div className="bg-gray-50 dark:bg-gray-800 px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Resume Preview</span>
+        </div>
+        <div className="overflow-y-auto max-h-[600px] bg-white">
+          <ResumeHTMLPreview data={data} />
+        </div>
+      </div>
+
+      {/* Download */}
       <PDFDownloadLink document={<ResumeDocument data={data} />} fileName={fileName}>
         {({ loading }) => (
           <button
@@ -245,7 +383,7 @@ export function ResumePDFDownload({ data, score, attempts }: ResumePDFDownloadPr
             ) : (
               <Download className="w-4 h-4" />
             )}
-            {loading ? "Generating PDF..." : "Download ATS-Optimized Resume"}
+            {loading ? "Generating PDF..." : "Download ATS-Optimized Resume (PDF)"}
           </button>
         )}
       </PDFDownloadLink>

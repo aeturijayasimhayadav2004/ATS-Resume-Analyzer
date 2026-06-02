@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import {
   Document,
   Page,
@@ -207,60 +208,82 @@ function ResumeDocument({ data }: { data: ResumeProfile }) {
   );
 }
 
+const previewBase: React.CSSProperties = {
+  fontFamily: "Arial, Helvetica, sans-serif",
+  fontSize: "9.5pt",
+  color: "#111",
+  lineHeight: 1.35,
+  background: "#fff",
+  padding: "28px 40px",
+  width: "100%",
+  boxSizing: "border-box",
+};
+
+function SectionHeading({ title }: { title: string }) {
+  return (
+    <>
+      <div style={{ fontSize: "9.5pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase" as const, letterSpacing: "0.8px", marginTop: 10, marginBottom: 2 }}>{title}</div>
+      <hr style={{ border: "none", borderTop: "1px solid #ddd", margin: "0 0 5px" }} />
+    </>
+  );
+}
+
+function TwoColRow({ left, right }: { left: React.ReactNode; right?: React.ReactNode }) {
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+      <tbody>
+        <tr>
+          <td style={{ padding: 0, verticalAlign: "top" }}>{left}</td>
+          {right && (
+            <td style={{ padding: 0, verticalAlign: "top", textAlign: "right", whiteSpace: "nowrap", width: 110, color: "#777", fontSize: "8.5pt" }}>
+              {right}
+            </td>
+          )}
+        </tr>
+      </tbody>
+    </table>
+  );
+}
+
 function ResumeHTMLPreview({ data }: { data: ResumeProfile }) {
   const contacts = [data.email, data.phone, data.location, data.linkedin, data.github, data.website].filter(Boolean);
 
   return (
-    <div
-      style={{
-        fontFamily: "Arial, Helvetica, sans-serif",
-        fontSize: "9.5pt",
-        color: "#111",
-        lineHeight: 1.35,
-        background: "#fff",
-        padding: "28px 40px",
-        width: "100%",
-        boxSizing: "border-box",
-      }}
-    >
+    <div style={previewBase}>
       {/* Header */}
-      <div style={{ marginBottom: 6 }}>
-        <div style={{ fontSize: "20pt", fontWeight: 700, letterSpacing: "-0.5px" }}>{data.name}</div>
-        <div style={{ fontSize: "8.5pt", color: "#444", display: "flex", flexWrap: "wrap", gap: 4, marginTop: 3 }}>
-          {contacts.map((item, i) => (
-            <span key={i} style={{ marginRight: 10 }}>{item}</span>
-          ))}
+      <div style={{ marginBottom: 4 }}>
+        <div style={{ fontSize: "20pt", fontWeight: 700, letterSpacing: "-0.3px" }}>{data.name}</div>
+        <div style={{ fontSize: "8.5pt", color: "#555", marginTop: 3 }}>
+          {contacts.join(" | ")}
         </div>
-        <hr style={{ borderTop: "1px solid #ddd", margin: "6px 0 0" }} />
+        <hr style={{ border: "none", borderTop: "1px solid #ddd", margin: "5px 0 0" }} />
       </div>
 
       {/* Summary */}
       {data.summary && (
         <div style={{ marginBottom: 2 }}>
-          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 8, marginBottom: 2 }}>Professional Summary</div>
-          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
-          <div style={{ fontSize: "9.5pt", color: "#444" }}>{data.summary}</div>
+          <SectionHeading title="Professional Summary" />
+          <div style={{ fontSize: "9.5pt", color: "#333" }}>{data.summary}</div>
         </div>
       )}
 
       {/* Experience */}
       {data.experience.length > 0 && (
         <div>
-          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Experience</div>
-          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          <SectionHeading title="Experience" />
           {data.experience.map((exp, i) => (
-            <div key={i} style={{ marginBottom: 6 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontWeight: 700, fontSize: "10pt" }}>{exp.title}</span>
-                <span style={{ color: "#777", fontSize: "8.5pt", whiteSpace: "nowrap", marginLeft: 8 }}>{exp.startDate} – {exp.endDate}</span>
-              </div>
-              <div style={{ color: "#777", fontSize: "8.5pt", marginBottom: 3 }}>
+            <div key={i} style={{ marginBottom: 7 }}>
+              <TwoColRow
+                left={<span style={{ fontWeight: 700, fontSize: "10pt" }}>{exp.title}</span>}
+                right={`${exp.startDate} – ${exp.endDate}`}
+              />
+              <div style={{ color: "#666", fontSize: "8.5pt", marginBottom: 3 }}>
                 {exp.company}{exp.location ? ` · ${exp.location}` : ""}
               </div>
               {exp.bullets.map((b, j) => (
-                <div key={j} style={{ display: "flex", marginBottom: 1.5 }}>
-                  <span style={{ width: 10, flexShrink: 0, color: "#444" }}>•</span>
-                  <span style={{ fontSize: "9pt", color: "#444", lineHeight: 1.35 }}>{b}</span>
+                <div key={j} style={{ display: "flex", gap: 6, marginBottom: 2 }}>
+                  <span style={{ flexShrink: 0, color: "#444", fontSize: "9pt" }}>•</span>
+                  <span style={{ fontSize: "9pt", color: "#333", lineHeight: 1.4 }}>{b}</span>
                 </div>
               ))}
             </div>
@@ -271,15 +294,14 @@ function ResumeHTMLPreview({ data }: { data: ResumeProfile }) {
       {/* Education */}
       {data.education.length > 0 && (
         <div>
-          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Education</div>
-          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          <SectionHeading title="Education" />
           {data.education.map((edu, i) => (
             <div key={i} style={{ marginBottom: 5 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontWeight: 700, fontSize: "10pt" }}>{edu.degree}</span>
-                <span style={{ color: "#777", fontSize: "8.5pt", whiteSpace: "nowrap", marginLeft: 8 }}>{edu.graduationDate}</span>
-              </div>
-              <div style={{ color: "#777", fontSize: "8.5pt" }}>
+              <TwoColRow
+                left={<span style={{ fontWeight: 700, fontSize: "10pt" }}>{edu.degree}</span>}
+                right={edu.graduationDate}
+              />
+              <div style={{ color: "#666", fontSize: "8.5pt" }}>
                 {edu.institution}{edu.location ? ` · ${edu.location}` : ""}{edu.gpa ? ` · GPA: ${edu.gpa}` : ""}
               </div>
             </div>
@@ -290,12 +312,11 @@ function ResumeHTMLPreview({ data }: { data: ResumeProfile }) {
       {/* Skills */}
       {data.skills.length > 0 && (
         <div>
-          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Skills</div>
-          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          <SectionHeading title="Skills" />
           {data.skills.map((sg, i) => (
-            <div key={i} style={{ marginBottom: 4 }}>
-              <span style={{ fontWeight: 700, fontSize: "9pt" }}>{sg.category}: </span>
-              <span style={{ fontSize: "9pt", color: "#444" }}>{sg.items.join(", ")}</span>
+            <div key={i} style={{ fontSize: "9pt", marginBottom: 3 }}>
+              <span style={{ fontWeight: 700 }}>{sg.category}:</span>{" "}
+              <span style={{ color: "#333" }}>{sg.items.join(", ")}</span>
             </div>
           ))}
         </div>
@@ -304,16 +325,17 @@ function ResumeHTMLPreview({ data }: { data: ResumeProfile }) {
       {/* Projects */}
       {data.projects && data.projects.length > 0 && (
         <div>
-          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Projects</div>
-          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          <SectionHeading title="Projects" />
           {data.projects.map((p, i) => (
             <div key={i} style={{ marginBottom: 5 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <span style={{ fontWeight: 700, fontSize: "10pt" }}>{p.name}</span>
-                {p.url && <span style={{ color: "#777", fontSize: "8.5pt" }}>{p.url}</span>}
+              <TwoColRow
+                left={<span style={{ fontWeight: 700, fontSize: "10pt" }}>{p.name}</span>}
+                right={p.url || undefined}
+              />
+              <div style={{ fontSize: "9pt", color: "#333", marginBottom: 2 }}>{p.description}</div>
+              <div style={{ fontSize: "8.5pt", color: "#666" }}>
+                <span style={{ fontWeight: 700 }}>Tech:</span> {p.technologies.join(", ")}
               </div>
-              <div style={{ fontSize: "9pt", color: "#444", marginBottom: 2 }}>{p.description}</div>
-              <div style={{ fontSize: "8.5pt", color: "#777" }}>Technologies: {p.technologies.join(", ")}</div>
             </div>
           ))}
         </div>
@@ -322,12 +344,13 @@ function ResumeHTMLPreview({ data }: { data: ResumeProfile }) {
       {/* Certifications */}
       {data.certifications && data.certifications.length > 0 && (
         <div>
-          <div style={{ fontSize: "10pt", fontWeight: 700, color: "#2563EB", textTransform: "uppercase", letterSpacing: "0.8px", marginTop: 9, marginBottom: 2 }}>Certifications</div>
-          <hr style={{ borderTop: "1px solid #ddd", marginBottom: 4 }} />
+          <SectionHeading title="Certifications" />
           {data.certifications.map((cert, i) => (
-            <div key={i} style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-              <span style={{ fontSize: "9.5pt", color: "#444" }}>{cert.name} · {cert.issuer}</span>
-              <span style={{ color: "#777", fontSize: "8.5pt" }}>{cert.date}</span>
+            <div key={i} style={{ marginBottom: 3 }}>
+              <TwoColRow
+                left={<span style={{ fontSize: "9.5pt", color: "#333" }}>{cert.name} · {cert.issuer}</span>}
+                right={cert.date}
+              />
             </div>
           ))}
         </div>

@@ -46,7 +46,7 @@ ${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT
       }
       parts.push(prompt);
 
-      const model = getGemini().getGenerativeModel({ model: "gemini-1.5-flash" });
+      const model = getGemini().getGenerativeModel({ model: "gemini-2.0-flash" });
       const result = await model.generateContent(parts);
       return NextResponse.json({ review: result.response.text() });
     }
@@ -73,7 +73,7 @@ ${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT
       parts.push(prompt);
 
       const model = getGemini().getGenerativeModel({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.0-flash",
         generationConfig: { responseMimeType: "application/json" },
       });
       const result = await model.generateContent(parts);

@@ -85,7 +85,7 @@ ${text || "[IMAGE PROVIDED]"}`;
     parts.push(prompt);
 
     const model = getGemini().getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
       generationConfig: { responseMimeType: "application/json" },
     });
     const result = await model.generateContent(parts);

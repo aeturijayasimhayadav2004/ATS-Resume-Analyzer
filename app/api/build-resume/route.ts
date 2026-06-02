@@ -93,6 +93,7 @@ ${resumeText}`;
 }
 
 export async function POST(req: NextRequest) {
+  try {
   const body = await req.json();
   const {
     profile,
@@ -114,6 +115,10 @@ export async function POST(req: NextRequest) {
 
   if (!profile || !jobDescription || !domain) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  }
+
+  if (!process.env.OPENAI_API_KEY) {
+    return NextResponse.json({ error: "OpenAI API key not configured on server" }, { status: 500 });
   }
 
   const improvementContext =
@@ -212,4 +217,9 @@ ${jobDescription}`;
   );
 
   return NextResponse.json({ resumeData, score, feedback, missingKeywords: stillMissing });
+  } catch (err) {
+    console.error("[/api/build-resume] error:", err);
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

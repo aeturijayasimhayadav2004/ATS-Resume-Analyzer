@@ -10,20 +10,25 @@ function getOpenAI() {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const { type, resumeContent, jobDescription, domain } = body as {
-    type: "review" | "ats";
-    resumeContent: { base64?: string; text?: string };
-    jobDescription: string;
-    domain: string;
-  };
+  try {
+    const body = await req.json();
+    const { type, resumeContent, jobDescription, domain } = body as {
+      type: "review" | "ats";
+      resumeContent: { base64?: string; text?: string };
+      jobDescription: string;
+      domain: string;
+    };
 
-  if (!type || !jobDescription || !domain) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-  }
+    if (!type || !jobDescription || !domain) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
 
-  if (type === "review") {
-    const prompt = `You are an experienced HR professional and technical recruiter specializing in ${domain} roles. Review this resume against the following job description and provide:
+    if (!process.env.OPENAI_API_KEY) {
+      return NextResponse.json({ error: "OpenAI API key not configured on server" }, { status: 500 });
+    }
+
+    if (type === "review") {
+      const prompt = `You are an experienced HR professional and technical recruiter specializing in ${domain} roles. Review this resume against the following job description and provide:
 1. Overall assessment of candidate fit (2-3 paragraphs)
 2. Key strengths relevant to the role
 3. Experience and skill gaps
@@ -35,24 +40,24 @@ Job Description: ${jobDescription}
 Resume Content:
 ${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT PROVIDED]"}`;
 
-    const content: OpenAI.ChatCompletionContentPart[] = [{ type: "text", text: prompt }];
-    if (resumeContent.base64) {
-      content.push({
-        type: "image_url",
-        image_url: { url: `data:image/png;base64,${resumeContent.base64}` },
+      const content: OpenAI.ChatCompletionContentPart[] = [{ type: "text", text: prompt }];
+      if (resumeContent.base64) {
+        content.push({
+          type: "image_url",
+          image_url: { url: `data:image/png;base64,${resumeContent.base64}` },
+        });
+      }
+
+      const response = await getOpenAI().chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content }],
       });
+
+      return NextResponse.json({ review: response.choices[0].message.content || "" });
     }
 
-    const response = await getOpenAI().chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content }],
-    });
-
-    return NextResponse.json({ review: response.choices[0].message.content || "" });
-  }
-
-  if (type === "ats") {
-    const prompt = `You are an ATS (Applicant Tracking System) scanner. Analyze this resume against the job description and return ONLY a JSON object in this exact format, no other text:
+    if (type === "ats") {
+      const prompt = `You are an ATS (Applicant Tracking System) scanner. Analyze this resume against the job description and return ONLY a JSON object in this exact format, no other text:
 {
   "score": number (0-100),
   "matchedKeywords": string[],
@@ -66,24 +71,29 @@ Domain: ${domain}
 Resume Content:
 ${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT PROVIDED]"}`;
 
-    const content: OpenAI.ChatCompletionContentPart[] = [{ type: "text", text: prompt }];
-    if (resumeContent.base64) {
-      content.push({
-        type: "image_url",
-        image_url: { url: `data:image/png;base64,${resumeContent.base64}` },
+      const content: OpenAI.ChatCompletionContentPart[] = [{ type: "text", text: prompt }];
+      if (resumeContent.base64) {
+        content.push({
+          type: "image_url",
+          image_url: { url: `data:image/png;base64,${resumeContent.base64}` },
+        });
+      }
+
+      const response = await getOpenAI().chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [{ role: "user", content }],
+        response_format: { type: "json_object" },
       });
+
+      const text = response.choices[0].message.content?.trim() || "{}";
+      const atsResult = JSON.parse(text) as ATSResult;
+      return NextResponse.json({ atsResult });
     }
 
-    const response = await getOpenAI().chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [{ role: "user", content }],
-      response_format: { type: "json_object" },
-    });
-
-    const text = response.choices[0].message.content?.trim() || "{}";
-    const atsResult = JSON.parse(text) as ATSResult;
-    return NextResponse.json({ atsResult });
+    return NextResponse.json({ error: "Invalid type" }, { status: 400 });
+  } catch (err) {
+    console.error("[/api/analyze] error:", err);
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  return NextResponse.json({ error: "Invalid type" }, { status: 400 });
 }

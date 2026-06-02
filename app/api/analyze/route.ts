@@ -53,7 +53,22 @@ ${resumeContent.text || "(No text extracted from resume)"}`;
     }
 
     if (type === "ats") {
-      const prompt = `You are an ATS (Applicant Tracking System) scanner. Analyze this resume against the job description and return ONLY a JSON object in this exact format, no other text:
+      const prompt = `You are a strict, calibrated ATS (Applicant Tracking System) scorer. Score this resume against the job description using EXACT keyword matching only — not semantic similarity.
+
+Scoring scale (be honest and strict):
+- 90-100: Nearly every required skill, tool, and qualification is explicitly present word-for-word
+- 75-89: Most required skills present, only minor gaps
+- 55-74: About half the required skills present, notable gaps in key areas
+- 35-54: Few required skills, major keyword gaps
+- 0-34: Almost no matching keywords or serious qualification mismatch
+
+Rules:
+- Count only EXACT or very near-exact keyword matches (e.g. "React" ≠ "web frameworks")
+- Required skills/tools mentioned multiple times in the JD carry more weight
+- Missing a required qualification (e.g. years of experience, specific degree) lowers score significantly
+- Do NOT inflate scores — a realistic score matters more than an optimistic one
+
+Return ONLY a JSON object, no other text:
 {
   "score": <number 0-100>,
   "matchedKeywords": ["string"],

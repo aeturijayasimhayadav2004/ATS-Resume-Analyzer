@@ -67,7 +67,22 @@ async function scoreResume(
   jobDescription: string,
   domain: string
 ): Promise<{ score: number; missingKeywords: string[]; feedback: string }> {
-  const prompt = `You are an ATS scanner. Score this resume against the job description. Return ONLY JSON:
+  const prompt = `You are a strict, calibrated ATS (Applicant Tracking System) scorer. Score this resume against the job description using EXACT keyword matching only — not semantic similarity.
+
+Scoring scale (be honest and strict):
+- 90-100: Nearly every required skill, tool, and qualification is explicitly present word-for-word
+- 75-89: Most required skills present, only minor gaps
+- 55-74: About half the required skills present, notable gaps in key areas
+- 35-54: Few required skills, major keyword gaps
+- 0-34: Almost no matching keywords or serious qualification mismatch
+
+Rules:
+- Count only EXACT or very near-exact keyword matches (e.g. "React" ≠ "web frameworks")
+- Required skills/tools mentioned multiple times in the JD carry more weight
+- Missing a required qualification (e.g. years of experience, specific degree) lowers score significantly
+- Do NOT inflate scores — a realistic score matters more than an optimistic one
+
+Return ONLY JSON:
 {
   "score": <number 0-100>,
   "matchedKeywords": ["string"],
@@ -132,7 +147,7 @@ export async function POST(req: NextRequest) {
 IMPORTANT — This is attempt ${attempt}. Previous ATS score was ${previousScore}/100.
 Feedback: ${previousFeedback}
 Missing keywords that MUST be naturally incorporated: ${missingKeywords?.join(", ")}
-Fix all identified issues and score above 80.`
+Incorporate all missing keywords naturally and fix identified issues.`
         : "";
 
     const prompt = `You are an expert resume writer and ATS optimization specialist. Create a highly ATS-optimized resume for a ${domain} role based on the candidate's profile and job description below.

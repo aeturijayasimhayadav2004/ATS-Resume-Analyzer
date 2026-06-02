@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI, Part } from "@google/generative-ai";
+import OpenAI from "openai";
 import { ATSResult } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function getGemini() {
-  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+function getGroq() {
+  return new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
 }
+
+const MODEL = "llama-3.3-70b-versatile";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,8 +28,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: "Gemini API key not configured on server" }, { status: 500 });
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json({ error: "Groq API key not configured on server" }, { status: 500 });
     }
 
     if (type === "review") {
@@ -38,46 +43,37 @@ Be specific, professional, and constructive.
 Job Description: ${jobDescription}
 
 Resume Content:
-${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT PROVIDED]"}`;
+${resumeContent.text || "(No text extracted from resume)"}`;
 
-      const parts: (string | Part)[] = [];
-      if (resumeContent.base64) {
-        parts.push({ inlineData: { mimeType: "image/png", data: resumeContent.base64 } });
-      }
-      parts.push(prompt);
-
-      const model = getGemini().getGenerativeModel({ model: "gemini-2.0-flash" });
-      const result = await model.generateContent(parts);
-      return NextResponse.json({ review: result.response.text() });
+      const response = await getGroq().chat.completions.create({
+        model: MODEL,
+        messages: [{ role: "user", content: prompt }],
+      });
+      return NextResponse.json({ review: response.choices[0].message.content || "" });
     }
 
     if (type === "ats") {
       const prompt = `You are an ATS (Applicant Tracking System) scanner. Analyze this resume against the job description and return ONLY a JSON object in this exact format, no other text:
 {
-  "score": number (0-100),
-  "matchedKeywords": string[],
-  "missingKeywords": string[],
-  "extraKeywords": string[],
-  "suggestions": string[]
+  "score": <number 0-100>,
+  "matchedKeywords": ["string"],
+  "missingKeywords": ["string"],
+  "extraKeywords": ["string"],
+  "suggestions": ["string"]
 }
 Job Description: ${jobDescription}
 Domain: ${domain}
 
 Resume Content:
-${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT PROVIDED]"}`;
+${resumeContent.text || "(No text extracted from resume)"}`;
 
-      const parts: (string | Part)[] = [];
-      if (resumeContent.base64) {
-        parts.push({ inlineData: { mimeType: "image/png", data: resumeContent.base64 } });
-      }
-      parts.push(prompt);
-
-      const model = getGemini().getGenerativeModel({
-        model: "gemini-2.0-flash",
-        generationConfig: { responseMimeType: "application/json" },
+      const response = await getGroq().chat.completions.create({
+        model: MODEL,
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
       });
-      const result = await model.generateContent(parts);
-      const atsResult = JSON.parse(result.response.text()) as ATSResult;
+
+      const atsResult = JSON.parse(response.choices[0].message.content || "{}") as ATSResult;
       return NextResponse.json({ atsResult });
     }
 

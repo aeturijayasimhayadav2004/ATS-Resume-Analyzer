@@ -1,25 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI, Part } from "@google/generative-ai";
+import OpenAI from "openai";
 import { ResumeProfile } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function getGemini() {
-  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+function getGroq() {
+  return new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
 }
+
+const MODEL = "llama-3.3-70b-versatile";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { base64, text } = body as { base64?: string; text?: string };
+    const { text } = body as { base64?: string; text?: string };
 
-    if (!base64 && !text) {
-      return NextResponse.json({ error: "No resume content provided" }, { status: 400 });
+    if (!text) {
+      return NextResponse.json({ error: "No resume text provided" }, { status: 400 });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: "Gemini API key not configured on server" }, { status: 500 });
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json({ error: "Groq API key not configured on server" }, { status: 500 });
     }
 
     const prompt = `Extract structured information from this resume and return ONLY a JSON object matching this exact schema. Use empty strings or empty arrays for missing fields — never null or undefined.
@@ -76,20 +81,15 @@ export async function POST(req: NextRequest) {
 }
 
 Resume content:
-${text || "[IMAGE PROVIDED]"}`;
+${text}`;
 
-    const parts: (string | Part)[] = [];
-    if (base64) {
-      parts.push({ inlineData: { mimeType: "image/png", data: base64 } });
-    }
-    parts.push(prompt);
-
-    const model = getGemini().getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: { responseMimeType: "application/json" },
+    const response = await getGroq().chat.completions.create({
+      model: MODEL,
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
     });
-    const result = await model.generateContent(parts);
-    const profile = JSON.parse(result.response.text()) as ResumeProfile;
+
+    const profile = JSON.parse(response.choices[0].message.content || "{}") as ResumeProfile;
     return NextResponse.json({ profile });
   } catch (err) {
     console.error("[/api/extract-profile] error:", err);

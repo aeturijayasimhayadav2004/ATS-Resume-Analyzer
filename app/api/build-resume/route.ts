@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import OpenAI from "openai";
 import { ResumeProfile, ATSResult } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-function getGemini() {
-  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+function getGroq() {
+  return new OpenAI({
+    apiKey: process.env.GROQ_API_KEY,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
 }
+
+const MODEL = "llama-3.3-70b-versatile";
 
 function profileToPlainText(r: ResumeProfile): string {
   const lines: string[] = [];
@@ -64,24 +69,27 @@ async function scoreResume(
 ): Promise<{ score: number; missingKeywords: string[]; feedback: string }> {
   const prompt = `You are an ATS scanner. Score this resume against the job description. Return ONLY JSON:
 {
-  "score": number (0-100),
-  "matchedKeywords": string[],
-  "missingKeywords": string[],
-  "extraKeywords": string[],
-  "suggestions": string[],
-  "feedback": "string (1-2 sentences on what to improve for higher score)"
+  "score": <number 0-100>,
+  "matchedKeywords": ["string"],
+  "missingKeywords": ["string"],
+  "extraKeywords": ["string"],
+  "suggestions": ["string"],
+  "feedback": "1-2 sentences on what to improve for higher score"
 }
 Job Description: ${jobDescription}
 Domain: ${domain}
 Resume:
 ${resumeText}`;
 
-  const model = getGemini().getGenerativeModel({
-    model: "gemini-2.0-flash",
-    generationConfig: { responseMimeType: "application/json" },
+  const response = await getGroq().chat.completions.create({
+    model: MODEL,
+    messages: [{ role: "user", content: prompt }],
+    response_format: { type: "json_object" },
   });
-  const result = await model.generateContent(prompt);
-  const parsed = JSON.parse(result.response.text()) as ATSResult & { feedback: string };
+
+  const parsed = JSON.parse(response.choices[0].message.content || "{}") as ATSResult & {
+    feedback: string;
+  };
   return {
     score: parsed.score,
     missingKeywords: parsed.missingKeywords ?? [],
@@ -114,8 +122,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: "Gemini API key not configured on server" }, { status: 500 });
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json({ error: "Groq API key not configured on server" }, { status: 500 });
     }
 
     const improvementContext =
@@ -196,13 +204,13 @@ ${JSON.stringify(profile, null, 2)}
 JOB DESCRIPTION:
 ${jobDescription}`;
 
-    const model = getGemini().getGenerativeModel({
-      model: "gemini-2.0-flash",
-      generationConfig: { responseMimeType: "application/json" },
+    const response = await getGroq().chat.completions.create({
+      model: MODEL,
+      messages: [{ role: "user", content: prompt }],
+      response_format: { type: "json_object" },
     });
-    const result = await model.generateContent(prompt);
-    const resumeData = JSON.parse(result.response.text()) as ResumeProfile;
 
+    const resumeData = JSON.parse(response.choices[0].message.content || "{}") as ResumeProfile;
     const resumeText = profileToPlainText(resumeData);
     const { score, missingKeywords: stillMissing, feedback } = await scoreResume(
       resumeText,

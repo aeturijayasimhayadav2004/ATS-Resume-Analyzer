@@ -18,6 +18,7 @@ import Image from "next/image";
 
 import { ScoreRing } from "@/components/ScoreRing";
 import { ResultTabs } from "@/components/ResultTabs";
+import { ResumeBuilder } from "@/components/ResumeBuilder";
 import { pdfToBase64Image, pdfToThumbnail } from "@/lib/pdfUtils";
 import { getResumeReview, getATSScore } from "@/lib/ai";
 import { extractTextFromPDF } from "@/lib/ocr";
@@ -76,6 +77,7 @@ export default function AnalyzePage() {
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [resumeContent, setResumeContent] = useState<{ base64?: string; text?: string }>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -161,9 +163,11 @@ export default function AnalyzePage() {
 
     try {
       const base64 = await pdfToBase64Image(file);
-      
+
       setLoadingMsg("Extracting text with OCR...");
       const text = await extractTextFromPDF(file);
+
+      setResumeContent({ base64, text });
 
       const [review, atsResult] = await Promise.all([
         getResumeReview({ base64, text }, data.jobDescription, domain),
@@ -214,6 +218,7 @@ export default function AnalyzePage() {
     setFile(null);
     setThumbnail(null);
     setResult(null);
+    setResumeContent({});
     setLoadingProgress(0);
     reset();
     if (fileInputRef.current) fileInputRef.current.value = "";
@@ -429,6 +434,19 @@ export default function AnalyzePage() {
           )}
         </div>
       </div>
+
+      {/* Resume Builder — shown after analysis */}
+      {result && !isLoading && (
+        <ResumeBuilder
+          resumeContent={resumeContent}
+          jobDescription={watch("jobDescription")}
+          domain={
+            watch("domain") === "Custom" && watch("customDomain")
+              ? watch("customDomain")!
+              : watch("domain")
+          }
+        />
+      )}
     </div>
   );
 }

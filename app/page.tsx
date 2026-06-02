@@ -45,7 +45,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 mb-8 border border-indigo-200 dark:border-indigo-800">
             <CheckCircle className="w-3.5 h-3.5" />
-            Powered by Google Gemini AI
+            Powered by GPT-4o
           </div>
 
           <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">

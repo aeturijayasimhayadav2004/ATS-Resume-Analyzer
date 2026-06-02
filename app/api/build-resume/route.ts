@@ -5,7 +5,9 @@ import { ResumeProfile, ATSResult } from "@/types";
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
 
 function profileToPlainText(r: ResumeProfile): string {
   const lines: string[] = [];
@@ -74,7 +76,7 @@ Domain: ${domain}
 Resume:
 ${resumeText}`;
 
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },
@@ -192,7 +194,7 @@ ${JSON.stringify(profile, null, 2)}
 JOB DESCRIPTION:
 ${jobDescription}`;
 
-  const response = await openai.chat.completions.create({
+  const response = await getOpenAI().chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
     response_format: { type: "json_object" },

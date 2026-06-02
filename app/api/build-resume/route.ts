@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { ResumeProfile, ATSResult } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-function getOpenAI() {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getGemini() {
+  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 }
 
 function profileToPlainText(r: ResumeProfile): string {
@@ -76,61 +76,58 @@ Domain: ${domain}
 Resume:
 ${resumeText}`;
 
-  const response = await getOpenAI().chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
+  const model = getGemini().getGenerativeModel({
+    model: "gemini-1.5-flash",
+    generationConfig: { responseMimeType: "application/json" },
   });
-
-  const result = JSON.parse(response.choices[0].message.content || "{}") as ATSResult & {
-    feedback: string;
-  };
+  const result = await model.generateContent(prompt);
+  const parsed = JSON.parse(result.response.text()) as ATSResult & { feedback: string };
   return {
-    score: result.score,
-    missingKeywords: result.missingKeywords ?? [],
-    feedback: result.feedback ?? "",
+    score: parsed.score,
+    missingKeywords: parsed.missingKeywords ?? [],
+    feedback: parsed.feedback ?? "",
   };
 }
 
 export async function POST(req: NextRequest) {
   try {
-  const body = await req.json();
-  const {
-    profile,
-    jobDescription,
-    domain,
-    attempt,
-    previousScore,
-    previousFeedback,
-    missingKeywords,
-  } = body as {
-    profile: ResumeProfile;
-    jobDescription: string;
-    domain: string;
-    attempt: number;
-    previousScore?: number;
-    previousFeedback?: string;
-    missingKeywords?: string[];
-  };
+    const body = await req.json();
+    const {
+      profile,
+      jobDescription,
+      domain,
+      attempt,
+      previousScore,
+      previousFeedback,
+      missingKeywords,
+    } = body as {
+      profile: ResumeProfile;
+      jobDescription: string;
+      domain: string;
+      attempt: number;
+      previousScore?: number;
+      previousFeedback?: string;
+      missingKeywords?: string[];
+    };
 
-  if (!profile || !jobDescription || !domain) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
-  }
+    if (!profile || !jobDescription || !domain) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json({ error: "OpenAI API key not configured on server" }, { status: 500 });
-  }
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json({ error: "Gemini API key not configured on server" }, { status: 500 });
+    }
 
-  const improvementContext =
-    attempt > 1
-      ? `
+    const improvementContext =
+      attempt > 1
+        ? `
 IMPORTANT — This is attempt ${attempt}. Previous ATS score was ${previousScore}/100.
 Feedback: ${previousFeedback}
 Missing keywords that MUST be naturally incorporated: ${missingKeywords?.join(", ")}
 Fix all identified issues and score above 80.`
-      : "";
+        : "";
 
-  const prompt = `You are an expert resume writer and ATS optimization specialist. Create a highly ATS-optimized resume for a ${domain} role based on the candidate's profile and job description below.
+    const prompt = `You are an expert resume writer and ATS optimization specialist. Create a highly ATS-optimized resume for a ${domain} role based on the candidate's profile and job description below.
 
 RULES:
 - Use exact keywords from the job description naturally throughout
@@ -199,24 +196,21 @@ ${JSON.stringify(profile, null, 2)}
 JOB DESCRIPTION:
 ${jobDescription}`;
 
-  const response = await getOpenAI().chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
-  });
+    const model = getGemini().getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: { responseMimeType: "application/json" },
+    });
+    const result = await model.generateContent(prompt);
+    const resumeData = JSON.parse(result.response.text()) as ResumeProfile;
 
-  const resumeData = JSON.parse(
-    response.choices[0].message.content || "{}"
-  ) as ResumeProfile;
+    const resumeText = profileToPlainText(resumeData);
+    const { score, missingKeywords: stillMissing, feedback } = await scoreResume(
+      resumeText,
+      jobDescription,
+      domain
+    );
 
-  const resumeText = profileToPlainText(resumeData);
-  const { score, missingKeywords: stillMissing, feedback } = await scoreResume(
-    resumeText,
-    jobDescription,
-    domain
-  );
-
-  return NextResponse.json({ resumeData, score, feedback, missingKeywords: stillMissing });
+    return NextResponse.json({ resumeData, score, feedback, missingKeywords: stillMissing });
   } catch (err) {
     console.error("[/api/build-resume] error:", err);
     const message = err instanceof Error ? err.message : "Internal server error";

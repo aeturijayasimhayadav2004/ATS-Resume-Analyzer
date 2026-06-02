@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { ATSResult } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function getOpenAI() {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getGemini() {
+  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 }
 
 export async function POST(req: NextRequest) {
@@ -23,8 +23,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: "OpenAI API key not configured on server" }, { status: 500 });
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json({ error: "Gemini API key not configured on server" }, { status: 500 });
     }
 
     if (type === "review") {
@@ -40,20 +40,15 @@ Job Description: ${jobDescription}
 Resume Content:
 ${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT PROVIDED]"}`;
 
-      const content: OpenAI.ChatCompletionContentPart[] = [{ type: "text", text: prompt }];
+      const parts: (string | Part)[] = [];
       if (resumeContent.base64) {
-        content.push({
-          type: "image_url",
-          image_url: { url: `data:image/png;base64,${resumeContent.base64}` },
-        });
+        parts.push({ inlineData: { mimeType: "image/png", data: resumeContent.base64 } });
       }
+      parts.push(prompt);
 
-      const response = await getOpenAI().chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content }],
-      });
-
-      return NextResponse.json({ review: response.choices[0].message.content || "" });
+      const model = getGemini().getGenerativeModel({ model: "gemini-1.5-flash" });
+      const result = await model.generateContent(parts);
+      return NextResponse.json({ review: result.response.text() });
     }
 
     if (type === "ats") {
@@ -71,22 +66,18 @@ Domain: ${domain}
 Resume Content:
 ${resumeContent.text ? `[TEXT CONTENT]\n${resumeContent.text}` : "[IMAGE CONTENT PROVIDED]"}`;
 
-      const content: OpenAI.ChatCompletionContentPart[] = [{ type: "text", text: prompt }];
+      const parts: (string | Part)[] = [];
       if (resumeContent.base64) {
-        content.push({
-          type: "image_url",
-          image_url: { url: `data:image/png;base64,${resumeContent.base64}` },
-        });
+        parts.push({ inlineData: { mimeType: "image/png", data: resumeContent.base64 } });
       }
+      parts.push(prompt);
 
-      const response = await getOpenAI().chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [{ role: "user", content }],
-        response_format: { type: "json_object" },
+      const model = getGemini().getGenerativeModel({
+        model: "gemini-1.5-flash",
+        generationConfig: { responseMimeType: "application/json" },
       });
-
-      const text = response.choices[0].message.content?.trim() || "{}";
-      const atsResult = JSON.parse(text) as ATSResult;
+      const result = await model.generateContent(parts);
+      const atsResult = JSON.parse(result.response.text()) as ATSResult;
       return NextResponse.json({ atsResult });
     }
 

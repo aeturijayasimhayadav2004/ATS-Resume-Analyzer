@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
+import { GoogleGenerativeAI, Part } from "@google/generative-ai";
 import { ResumeProfile } from "@/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-function getOpenAI() {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+function getGemini() {
+  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
 }
 
 export async function POST(req: NextRequest) {
   try {
-  const body = await req.json();
-  const { base64, text } = body as { base64?: string; text?: string };
+    const body = await req.json();
+    const { base64, text } = body as { base64?: string; text?: string };
 
-  if (!base64 && !text) {
-    return NextResponse.json({ error: "No resume content provided" }, { status: 400 });
-  }
+    if (!base64 && !text) {
+      return NextResponse.json({ error: "No resume content provided" }, { status: 400 });
+    }
 
-  if (!process.env.OPENAI_API_KEY) {
-    return NextResponse.json({ error: "OpenAI API key not configured on server" }, { status: 500 });
-  }
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json({ error: "Gemini API key not configured on server" }, { status: 500 });
+    }
 
-  const prompt = `Extract structured information from this resume and return ONLY a JSON object matching this exact schema. Use empty strings or empty arrays for missing fields — never null or undefined.
+    const prompt = `Extract structured information from this resume and return ONLY a JSON object matching this exact schema. Use empty strings or empty arrays for missing fields — never null or undefined.
 
 {
   "name": "string",
@@ -78,22 +78,19 @@ export async function POST(req: NextRequest) {
 Resume content:
 ${text || "[IMAGE PROVIDED]"}`;
 
-  const content: OpenAI.ChatCompletionContentPart[] = [{ type: "text", text: prompt }];
-  if (base64) {
-    content.push({
-      type: "image_url",
-      image_url: { url: `data:image/png;base64,${base64}` },
+    const parts: (string | Part)[] = [];
+    if (base64) {
+      parts.push({ inlineData: { mimeType: "image/png", data: base64 } });
+    }
+    parts.push(prompt);
+
+    const model = getGemini().getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: { responseMimeType: "application/json" },
     });
-  }
-
-  const response = await getOpenAI().chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [{ role: "user", content }],
-    response_format: { type: "json_object" },
-  });
-
-  const profile = JSON.parse(response.choices[0].message.content || "{}") as ResumeProfile;
-  return NextResponse.json({ profile });
+    const result = await model.generateContent(parts);
+    const profile = JSON.parse(result.response.text()) as ResumeProfile;
+    return NextResponse.json({ profile });
   } catch (err) {
     console.error("[/api/extract-profile] error:", err);
     const message = err instanceof Error ? err.message : "Internal server error";
